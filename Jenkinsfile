@@ -5,10 +5,6 @@ pipeline {
         }
     }
     
-    environment {
-        VENV_DIR = 'venv'
-    }
-
     stages {
         stage('Checkout') {
             steps {
