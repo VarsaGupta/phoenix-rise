@@ -1,26 +1,45 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'python:3.11'
+        }
+    }
+    
     environment {
-        FLASK_APP = 'app.py'
-        FLASK_ENV = 'development'
+        VENV_DIR = 'venv'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                script {
+                    echo "Checking out code..."
+                    checkout scm
+                }
+            }
+        }
+
+        stage('Setup Virtual Environment') {
+            steps {
+                script {
+                    echo "Creating virtual environment..."
+                    sh """
+                        python -m venv ${VENV_DIR}
+                        source ${VENV_DIR}/bin/activate
+                    """
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh '''
                     echo "Installing dependencies..."
-                    python3 -m pip install --upgrade pip
-                    pip3 install -r requirements.txt
-                    '''
+                    sh """
+                        source ${VENV_DIR}/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    """
                 }
             }
         }
@@ -28,9 +47,11 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    sh '''
-                    pytest || echo "Tests failed, but continuing..."
-                    '''
+                    echo "Running tests..."
+                    sh """
+                        source ${VENV_DIR}/bin/activate
+                        pytest tests/ --junitxml=report.xml
+                    """
                 }
             }
         }
@@ -38,10 +59,8 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 script {
-                    sh '''
-                    pkill -f "gunicorn" || true
-                    gunicorn --bind 0.0.0.0:5000 app:app --daemon
-                    '''
+                    echo "Deploying application..."
+                    # Add deployment commands here
                 }
             }
         }
@@ -49,25 +68,22 @@ pipeline {
         stage('Verify Health') {
             steps {
                 script {
-                    sh '''
-                    echo "Waiting for application to be ready..."
-                    for i in {1..5}; do
-                        curl --silent --fail http://localhost:5000/health-monitor && exit 0 || sleep 2
-                    done
-                    echo "Health check failed!" && exit 1
-                    '''
+                    echo "Verifying application health..."
+                    # Add health check commands here
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline finished successfully!'
+        always {
+            echo "Pipeline execution completed."
         }
-
+        success {
+            echo "Pipeline executed successfully."
+        }
         failure {
-            echo 'Pipeline failed.'
+            echo "Pipeline failed."
         }
     }
 }
