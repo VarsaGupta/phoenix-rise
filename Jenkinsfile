@@ -4,6 +4,7 @@ pipeline {
     environment {
         FLASK_APP = 'app.py'
         FLASK_ENV = 'development'
+        VENV_DIR = 'venv' // Virtual environment directory
     }
 
     stages {
@@ -13,12 +14,13 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Setup Python Environment') {
             steps {
                 script {
-                    // Ensure Python and pip are installed (optional for fresh environments)
+                    // Set up a virtual environment to isolate the Python environment
                     sh '''
-                    apt update && apt install -y python3 python3-pip
+                    python3 -m venv ${VENV_DIR}
+                    source ${VENV_DIR}/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                     '''
@@ -29,9 +31,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    // Ensure pytest is installed and run tests
                     sh '''
-                    pip install pytest
+                    source ${VENV_DIR}/bin/activate
                     pytest || echo "Tests failed, but continuing..."
                     '''
                 }
@@ -41,9 +42,9 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 script {
-                    // Run the Flask application in the background using gunicorn for better management
                     sh '''
-                    pkill -f "gunicorn" || true  # Kill existing gunicorn processes (if any)
+                    source ${VENV_DIR}/bin/activate
+                    pkill -f "gunicorn" || true
                     gunicorn --bind 0.0.0.0:5000 app:app --daemon
                     '''
                 }
@@ -53,7 +54,6 @@ pipeline {
         stage('Verify Health') {
             steps {
                 script {
-                    // Health check with retries
                     sh '''
                     echo "Waiting for application to be ready..."
                     for i in {1..5}; do
