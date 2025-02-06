@@ -56,7 +56,7 @@ pipeline {
             steps {
                 script {
                     echo "Deploying application..."
-                    # Add deployment commands here
+                
                 }
             }
         }
@@ -65,7 +65,6 @@ pipeline {
             steps {
                 script {
                     echo "Verifying application health..."
-                    # Add health check commands here
                 }
             }
         }
