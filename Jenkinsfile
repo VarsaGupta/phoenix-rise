@@ -13,6 +13,18 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh '''
+                    echo "Installing dependencies..."
+                    python3 -m pip install --upgrade pip
+                    pip3 install -r requirements.txt
+                    '''
+                }
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 script {
